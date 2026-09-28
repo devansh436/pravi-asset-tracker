@@ -1,0 +1,14 @@
+import { NavLink } from "react-router-dom";
+import { getDashboard } from "../api/dashboard";
+import { AssetTable } from "../components/assets/AssetTable";
+import { Badge, ErrorState, PageHeader, Skeleton, useResource } from "../components/feedback";
+import { MaintenanceList } from "../components/maintenance/MaintenanceList";
+import { Stat } from "../components/common/Stat";
+
+export function OverviewPage() {
+  const resource = useResource(getDashboard, []);
+  if (resource.loading) return <><PageHeader eyebrow="FIELD OVERVIEW" title="Control room" /><Skeleton rows={6} /></>;
+  if (resource.error) return <><PageHeader eyebrow="FIELD OVERVIEW" title="Control room" /><ErrorState {...resource} /></>;
+  const dashboard = resource.data; const maxType = Math.max(...dashboard.countsByType.map((item) => item.count), 1);
+  return <><PageHeader eyebrow="FIELD OVERVIEW" title="Control room"><Badge tone="success">SYSTEM OPERATIONAL</Badge></PageHeader><div className="stat-grid"><Stat label="Total assets" value={dashboard.totalAssets} detail="registered infrastructure" tone="accent" /><Stat label="Average condition" value={dashboard.averageCondition} detail="out of 100" tone="success" /><Stat label="Open defects" value={dashboard.openDefects.count} detail="requiring attention" tone="danger" /><Stat label="Active maintenance" value={dashboard.activeMaintenance.count} detail="jobs in motion" tone="warning" /></div><div className="overview-grid"><section className="card chart-card"><div className="card-heading"><div><span className="eyebrow">PORTFOLIO MIX</span><h2>Assets by type</h2></div><span className="muted">Live count</span></div><div className="bar-list">{dashboard.countsByType.map((item) => <div className="bar-row" key={item.type}><span>{item.type}</span><div className="bar-track"><i style={{ width: `${item.count / maxType * 100}%` }} /></div><strong>{item.count}</strong></div>)}</div></section><section className="card chart-card"><div className="card-heading"><div><span className="eyebrow">STATUS SIGNAL</span><h2>Lifecycle states</h2></div></div><div className="status-grid">{dashboard.countsByStatus.map((item) => <div className="status-cell" key={item.status}><strong>{item.count}</strong><span>{item.status.replaceAll("_", " ")}</span></div>)}</div></section></div><div className="overview-grid lower"><section className="card"><div className="card-heading"><div><span className="eyebrow">RISK WATCH</span><h2>Lowest condition</h2></div><NavLink className="text-link" to="/alerts">View alerts →</NavLink></div><AssetTable assets={dashboard.lowConditionAssets} /></section><section className="card"><div className="card-heading"><div><span className="eyebrow">MAINTENANCE QUEUE</span><h2>Active work</h2></div><NavLink className="text-link" to="/maintenance">Open board →</NavLink></div><MaintenanceList items={dashboard.activeMaintenance.list} /></section></div></>;
+}
