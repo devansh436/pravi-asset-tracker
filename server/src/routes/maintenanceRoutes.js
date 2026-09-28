@@ -1,13 +1,39 @@
 import { Router } from "express";
-import { firebaseAuthRequired } from "../middleware/firebaseAuth.js";
-import { requireRole } from "../middleware/rbac.js";
-import { getMaintenanceById, getMaintenanceList, patchMaintenance, postMaintenance } from "../controllers/maintenanceController.js";
+import {
+  attachRole,
+  requireRole,
+  requireMaintenancePatchRole,
+} from "../middleware/role.js";
+
+import {
+  getMaintenanceById,
+  getMaintenanceList,
+  patchMaintenance,
+  postMaintenance,
+} from "../controllers/maintenanceController.js";
 
 const router = Router();
-router.use(firebaseAuthRequired);
+
+router.use(attachRole);
+
+// GET → any role
 router.get("/", getMaintenanceList);
 router.get("/:id", getMaintenanceById);
-router.post("/", requireRole("ADMIN", "INSPECTOR"), postMaintenance);
-router.patch("/:id", requireRole("ADMIN", "MAINTENANCE"), patchMaintenance);
+
+// POST → ADMIN, INSPECTOR, MAINTENANCE
+router.post(
+  "/",
+  requireRole("ADMIN", "INSPECTOR", "MAINTENANCE"),
+  postMaintenance,
+);
+
+// PATCH:
+// normal updates → ADMIN, MAINTENANCE
+// COMPLETED → ADMIN, INSPECTOR, MAINTENANCE
+router.patch(
+  "/:id",
+  requireMaintenancePatchRole,
+  patchMaintenance,
+);
 
 export default router;

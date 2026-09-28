@@ -1,4 +1,6 @@
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api"
+).replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message, status, payload) {
@@ -9,20 +11,44 @@ export class ApiError extends Error {
   }
 }
 
-export async function request(path, options = {}, attempt = 0) {
+export function getSelectedRole() {
+  return sessionStorage.getItem("pravi.selected-role") || "viewer";
+}
+
+export function setSelectedRole(role) {
+  sessionStorage.setItem("pravi.selected-role", role);
+}
+
+export function clearSelectedRole() {
+  sessionStorage.removeItem("pravi.selected-role");
+}
+
+export async function request(path, options = {}) {
+  const role = getSelectedRole();
+
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "x-demo-user": "admin",
+      "X-Role": role,
       ...(options.headers || {}),
     },
   });
+
   const payload = await response.json().catch(() => null);
-  if (response.status === 401 && attempt === 0) return request(path, options, 1);
+
   if (!response.ok) {
-    const message = payload?.error?.error || payload?.error || "Request failed";
-    throw new ApiError(message, response.status, payload);
+    const message =
+      payload?.error?.error ||
+      payload?.error ||
+      "Request failed";
+
+    throw new ApiError(
+      message,
+      response.status,
+      payload,
+    );
   }
+
   return payload?.data;
 }

@@ -6,7 +6,7 @@ import { createInspection, listInspections } from "../services/inspectionService
 export async function postInspection(req, res, next) {
   try {
     if (!validateConditionScore(req.body.condition_score)) return validationFailure(res, { condition_score: "must be between 0 and 100" });
-    return success(res, await createInspection(req.params.id, req.user.id, req.body.condition_score, req.body.notes), 201);
+    return success(res, await createInspection(req.params.id, req.userId, req.body.condition_score, req.body.notes), 201);
   } catch (error) { return next(error); }
 }
 
